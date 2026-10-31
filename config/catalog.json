@@ -1,0 +1,190 @@
+{
+    "tables": {
+        "dim_customer": {
+            "role": "dimension",
+            "grain": "One row per customer.",
+            "description": "Fictional customers, including gender and customer segment."
+        },
+        "dim_product": {
+            "role": "dimension",
+            "grain": "One row per product.",
+            "description": "Products available for purchase, including category and brand."
+        },
+        "dim_location": {
+            "role": "dimension",
+            "grain": "One row per shipping city within a state and country.",
+            "description": "Shipping locations. Multiple cities can belong to the same state. Group state totals by country and state_name."
+        },
+        "dim_date": {
+            "role": "dimension",
+            "grain": "One row per order placement date included in the dataset.",
+            "description": "Calendar attributes for order placement dates. The teaching dataset contains selected dates."
+        },
+        "fact_order_item": {
+            "role": "fact",
+            "grain": "One row per order item, uniquely identified by order_id and line_number.",
+            "description": "Order item transactions in USD. All lines of an order share its customer, placement date, shipping location, and status. Line sales equal quantity times unit_price minus discount_amount."
+        }
+    },
+    "columns": {
+        "dim_customer.gender": {
+            "description": "Customer gender, recorded as male, female, or not-specified.",
+            "aliases": [
+                "gender",
+                "customer gender"
+            ],
+            "allowed_values": [
+                "male",
+                "female",
+                "not-specified"
+            ]
+        },
+        "dim_customer.customer_segment": {
+            "aliases": [
+                "customer segment",
+                "segment"
+            ],
+            "allowed_values": [
+                "Standard",
+                "Premium"
+            ]
+        },
+        "dim_product.brand": {
+            "description": "Product brand. Multiple products can share a brand.",
+            "aliases": [
+                "brand",
+                "brand name",
+                "product brand"
+            ]
+        },
+        "dim_product.category": {
+            "aliases": [
+                "category",
+                "product category"
+            ]
+        },
+        "dim_location.city_name": {
+            "description": "Shipping city. Identify a city together with its state and country.",
+            "aliases": [
+                "city",
+                "shipping city"
+            ]
+        },
+        "dim_location.state_name": {
+            "description": "State containing the shipping city. Group state totals by country and state_name.",
+            "aliases": [
+                "state",
+                "shipping state"
+            ]
+        },
+        "dim_location.country": {
+            "aliases": [
+                "country",
+                "shipping country"
+            ]
+        },
+        "dim_date.full_date": {
+            "description": "Order placement date. Date filters use an inclusive start and exclusive end.",
+            "aliases": [
+                "order date",
+                "purchase date"
+            ]
+        },
+        "fact_order_item.unit_price": {
+            "description": "Historical sale price per unit in USD.",
+            "aliases": [
+                "unit price"
+            ]
+        },
+        "fact_order_item.discount_amount": {
+            "description": "Total discount for the entire order line in USD. Subtract this amount once per line.",
+            "aliases": [
+                "line discount",
+                "discount amount"
+            ]
+        },
+        "fact_order_item.order_status": {
+            "description": "Order status. Default sales metrics include completed orders.",
+            "aliases": [
+                "order status"
+            ],
+            "allowed_values": [
+                "completed",
+                "cancelled"
+            ]
+        }
+    },
+    "metrics": {
+        "net_sales": {
+            "base_table": "fact_order_item",
+            "description": "Completed sales after line discounts, in USD. Excludes tax, shipping, refunds, and currency conversion. Returns zero for an empty period.",
+            "unit": "USD",
+            "sql_expression": "COALESCE(SUM(f.quantity * f.unit_price - f.discount_amount), 0.00)",
+            "filters": {
+                "fact_order_item.order_status": "completed"
+            },
+            "referenced_columns": [
+                "fact_order_item.quantity",
+                "fact_order_item.unit_price",
+                "fact_order_item.discount_amount"
+            ],
+            "aliases": [
+                "sales",
+                "revenue",
+                "total sales",
+                "net revenue"
+            ]
+        },
+        "completed_orders": {
+            "base_table": "fact_order_item",
+            "description": "Number of distinct completed orders. Count each order once even when it has multiple item lines.",
+            "unit": "orders",
+            "sql_expression": "COUNT(DISTINCT f.order_id)",
+            "filters": {
+                "fact_order_item.order_status": "completed"
+            },
+            "referenced_columns": [
+                "fact_order_item.order_id"
+            ],
+            "aliases": [
+                "completed order count",
+                "number of completed orders"
+            ]
+        },
+        "units_sold": {
+            "base_table": "fact_order_item",
+            "description": "Total item quantity in completed orders. Returns zero for an empty period.",
+            "unit": "units",
+            "sql_expression": "COALESCE(SUM(f.quantity), 0)",
+            "filters": {
+                "fact_order_item.order_status": "completed"
+            },
+            "referenced_columns": [
+                "fact_order_item.quantity"
+            ],
+            "aliases": [
+                "units sold",
+                "quantity sold"
+            ]
+        },
+        "average_order_value": {
+            "base_table": "fact_order_item",
+            "description": "Completed net sales divided by distinct completed orders, rounded to two decimal places. Returns NULL when there are no completed orders.",
+            "unit": "USD/order",
+            "sql_expression": "ROUND(SUM(f.quantity * f.unit_price - f.discount_amount) / NULLIF(COUNT(DISTINCT f.order_id), 0), 2)",
+            "filters": {
+                "fact_order_item.order_status": "completed"
+            },
+            "referenced_columns": [
+                "fact_order_item.quantity",
+                "fact_order_item.unit_price",
+                "fact_order_item.discount_amount",
+                "fact_order_item.order_id"
+            ],
+            "aliases": [
+                "average order value",
+                "AOV"
+            ]
+        }
+    }
+}

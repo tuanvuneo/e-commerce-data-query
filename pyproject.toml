@@ -1,0 +1,15 @@
+[project]
+name = "e-commerce-data-query"
+version = "0.1.0"
+description = "An English-language AI assistant for querying e-commerce data."
+requires-python = ">=3.12"
+dependencies = [
+    "asyncmy>=0.2,<0.3",
+    "cryptography>=50.0.2",
+    "fastapi>=0.162.0",
+    "httpx>=0.28.1",
+    "pydantic-settings>=2,<3",
+    "python-dotenv>=1.2.4",
+    "sqlalchemy[asyncio]>=2.0,<2.1",
+    "uvicorn[standard]>=0.54.0",
+]
