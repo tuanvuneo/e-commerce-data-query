@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -49,3 +50,25 @@ class MetadataSettings(Settings):
             )
 
         return value
+
+
+class EmbeddingSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=PROJECT_ROOT / ".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        hide_input_in_errors=True,
+    )
+
+    embedding_model: str = Field(
+        default="Qwen/Qwen3-Embedding-0.6B",
+        min_length=1,
+    )
+    embedding_dimension: int = Field(default=1024, ge=1)
+    embedding_device: Literal["cpu", "mps", "cuda"] = "cpu"
+    embedding_batch_size: int = Field(default=2, ge=1, le=32)
+    embedding_max_length: int = Field(
+        default=512,
+        ge=32,
+        le=32768,
+    )
